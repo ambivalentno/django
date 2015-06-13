@@ -83,10 +83,11 @@ class Migration(object):
 
     def optimize_operations(self, project_state, schema_editor):
         """
-        Try to join multiple ALTER TABLE
+        Try to join multiple ALTER TABLE statements into single
+        MultipleModelOperation.
         """
         try:
-            schema_editor.optimize_operations(self.operations)
+            self.operations = schema_editor.optimize_operations(self.operations)
         except NotImplementedError:
             pass
 
