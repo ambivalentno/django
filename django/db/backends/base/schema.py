@@ -68,6 +68,10 @@ class BaseDatabaseSchemaEditor(object):
 
     sql_create_pk = "ALTER TABLE %(table)s ADD CONSTRAINT %(name)s PRIMARY KEY (%(columns)s)"
     sql_delete_pk = "ALTER TABLE %(table)s DROP CONSTRAINT %(name)s"
+    MULTI_COLUMNS_ALTER = False
+
+    def optimize_operations(self, operations):
+        return operations
 
     def __init__(self, connection, collect_sql=False):
         self.connection = connection
