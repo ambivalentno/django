@@ -48,8 +48,10 @@ class OperationTestBase(MigrationTestBase):
         return project_state, new_state
 
     def set_up_test_model(self, app_label, second_model=False, third_model=False,
-            related_model=False, mti_model=False, proxy_model=False, manager_model=False,
-            unique_together=False, options=False, db_table=None, index_together=False):
+                          related_model=False, mti_model=False,
+                          proxy_model=False, manager_model=False,
+                          unique_together=False, options=False,
+                          db_table=None, index_together=False):
         """
         Creates a test model state and database table.
         """
@@ -672,6 +674,56 @@ class OperationTests(OperationTestBase):
         self.assertEqual(definition[0], "AddField")
         self.assertEqual(definition[1], [])
         self.assertEqual(sorted(definition[2]), ["field", "model_name", "name"])
+
+    def test_add_fields(self):
+        """
+        Tests the multiple AddField operation grouped by MultipleModelOperation.
+        """
+        # Test the state alteration
+        operation = migrations.MultipleModelOperation(
+            migrations.AddField(
+                "Pony",
+                "height",
+                models.FloatField(null=True, default=5),
+            ),
+            migrations.AddField(
+                "Pony",
+                "weight",
+                models.FloatField(null=True, default=5),
+            ),
+        )
+        self.assertEqual(
+            operation.describe(), "Add fields height, weight to Pony"
+        )
+        project_state, new_state = self.make_test_state("test_adfl", operation)
+        self.assertEqual(len(new_state.models["test_adfl", "pony"].fields), 4)
+        field = [
+            f for n, f in new_state.models["test_adfl", "pony"].fields
+            if n == "height"
+        ][0]
+        self.assertEqual(field.default, 6)
+        # Test the database alteration
+        self.assertColumnNotExists("test_adfl_pony", "height")
+        self.assertColumnNotExists("test_adfl_pony", "weight")
+        with connection.schema_editor() as editor:
+            operation.database_forwards(
+                "test_adfl", editor, project_state, new_state
+            )
+        if connection.schema_editor().getattr(
+                'MULTI_COLUMNS_ALTER', False):
+            self.assertNumQueries(1)
+        self.assertColumnExists("test_adfl_pony", "height")
+        self.assertColumnExists("test_adfl_pony", "weight")
+        # And test reversal
+        with connection.schema_editor() as editor:
+            operation.database_backwards(
+                "test_adfl", editor, new_state, project_state
+            )
+        if connection.schema_editor().getattr(
+                'MULTI_COLUMNS_ALTER', False):
+            self.assertNumQueries(1)
+        self.assertColumnNotExists("test_adfl_pony", "height")
+        self.assertColumnNotExists("test_adfl_pony", "weight")
 
     def test_add_charfield(self):
         """

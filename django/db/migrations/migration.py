@@ -90,6 +90,7 @@ class Migration(object):
         Returns the resulting project state for efficient re-use by following
         Migrations.
         """
+        self.operations = schema_editor.optimize_operations(self.operations)
         for operation in self.operations:
             # If this operation cannot be represented as SQL, place a comment
             # there instead
