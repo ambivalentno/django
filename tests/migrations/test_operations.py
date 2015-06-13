@@ -47,6 +47,17 @@ class OperationTestBase(MigrationTestBase):
         operation.state_forwards(app_label, new_state)
         return project_state, new_state
 
+    def make_test_state_improved(self, app_label, operations, **kwargs):
+        """
+        Makes a test state using set_up_test_model and returns the
+        original state and the state after the migration is applied.
+        """
+        project_state = self.set_up_test_model(app_label, **kwargs)
+        new_state = project_state.clone()
+        for operation in operations:
+            operation.state_forwards(app_label, new_state)
+        return project_state, new_state
+
     def set_up_test_model(self, app_label, second_model=False, third_model=False,
                           related_model=False, mti_model=False,
                           proxy_model=False, manager_model=False,
@@ -724,6 +735,34 @@ class OperationTests(OperationTestBase):
             self.assertNumQueries(1)
         self.assertColumnNotExists("test_adfl_pony", "height")
         self.assertColumnNotExists("test_adfl_pony", "weight")
+
+    def test_schema_editor_optimization(self):
+        """
+        Tests that 2 AddField operations that applied to same model
+        will be aggregated to one operation if it's possible for
+        tested backend
+        """
+
+        operation = migrations.AddField(
+            "Pony",
+            "height",
+            models.FloatField(null=True, default=133),
+        )
+        operation2 = migrations.AddField(
+            "Pony",
+            "weight",
+            models.FloatField(null=True, default=7),
+        )
+        operations = [operation, operation2]
+
+        with connection.schema_editor() as editor:
+            optimized_operation =  editor.optimize_operations(operations)
+            if editor.MULTI_COLUMNS_ALTER:
+                self.assertEqual(len(optimized_operation), 1)
+                self.assertTrue(isinstance(optimized_operation,
+                                           migrations.MultipleModelOperation))
+            else:
+                self.assertEqual(len(optimized_operation), len(operations))
 
     def test_add_charfield(self):
         """
