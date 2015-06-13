@@ -709,7 +709,9 @@ class OperationTests(OperationTestBase):
             operation.database_forwards(
                 "test_adfl", editor, project_state, new_state
             )
-        self.assertNumQueries(1)
+        if connection.schema_editor().getattr(
+                'MULTI_COLUMNS_ALTER', False):
+            self.assertNumQueries(1)
         self.assertColumnExists("test_adfl_pony", "height")
         self.assertColumnExists("test_adfl_pony", "weight")
         # And test reversal
@@ -717,7 +719,9 @@ class OperationTests(OperationTestBase):
             operation.database_backwards(
                 "test_adfl", editor, new_state, project_state
             )
-        self.assertNumQueries(1)
+        if connection.schema_editor().getattr(
+                'MULTI_COLUMNS_ALTER', False):
+            self.assertNumQueries(1)
         self.assertColumnNotExists("test_adfl_pony", "height")
         self.assertColumnNotExists("test_adfl_pony", "weight")
 
