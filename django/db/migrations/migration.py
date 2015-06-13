@@ -81,6 +81,15 @@ class Migration(object):
             operation.state_forwards(self.app_label, new_state)
         return new_state
 
+    def optimize_operations(self, project_state, schema_editor):
+        """
+        Try to join multiple ALTER TABLE
+        """
+        try:
+            schema_editor.optimize_operations(self.operations)
+        except NotImplementedError:
+            pass
+
     def apply(self, project_state, schema_editor, collect_sql=False):
         """
         Takes a project_state representing all migrations prior to this one
@@ -90,6 +99,7 @@ class Migration(object):
         Returns the resulting project state for efficient re-use by following
         Migrations.
         """
+        self.optimize_operations(project_state, schema_editor)
         for operation in self.operations:
             # If this operation cannot be represented as SQL, place a comment
             # there instead
