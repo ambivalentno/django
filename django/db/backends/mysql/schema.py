@@ -26,6 +26,10 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
 
     sql_create_pk = "ALTER TABLE %(table)s ADD CONSTRAINT %(name)s PRIMARY KEY (%(columns)s)"
     sql_delete_pk = "ALTER TABLE %(table)s DROP PRIMARY KEY"
+    MULTI_COLUMNS_ALTER = True
+
+    def optimize_operations(self, operations):
+        return operations
 
     def quote_value(self, value):
         # Inner import to allow module to fail to load gracefully
