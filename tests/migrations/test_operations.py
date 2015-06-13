@@ -677,10 +677,10 @@ class OperationTests(OperationTestBase):
 
     def test_add_fields(self):
         """
-        Tests the multiple AddField operation grouped my MultipleAlterOperation.
+        Tests the multiple AddField operation grouped my MultipleModelOperation.
         """
         # Test the state alteration
-        operation = migrations.MultipleAlterOperation(
+        operation = migrations.MultipleModelOperation(
             migrations.AddField(
                 "Pony",
                 "height",
